@@ -165,7 +165,7 @@ public class AddCommentFragment extends Fragment implements OnClickListener, Tex
      */
     private void setHeaderBg() {
         // TODO Auto-generated method stub
-        if (!postBgColor.equals("")) {
+        if (postBgColor != null && !postBgColor.equals("")) {
             int index = Arrays.asList(getResources().getStringArray(R.array.arrPostColorCodes))
                     .indexOf(postBgColor);
             if (index != -1) {

@@ -85,7 +85,7 @@ public class DefaultConstants {
     public static final int REQUEST_GALLERY = 1002;
     //
     public static final int NULL_INTEGER = -1;
-    //
+    public static final int DEFAULT_INTEGER = 0;
 
     /**
      * Default String Constants.

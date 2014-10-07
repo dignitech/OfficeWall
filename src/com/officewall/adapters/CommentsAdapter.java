@@ -103,7 +103,8 @@ public class CommentsAdapter extends BaseAdapter {
         holder.tvNumber.setText(String.valueOf(position + 1));
         int drawable = 0;
         int index = position % 7;
-        if (comment.getNew() != DefaultConstants.NULL_INTEGER) {
+        Integer isNew = comment.getNew();
+        if (isNew != null && isNew != DefaultConstants.DEFAULT_INTEGER) {
             drawable = typedArrNewCommentNumberDrawables.getResourceId(index, 0);
         } else {
             drawable = typedArrCommentNumberDrawables.getResourceId(index, 0);
@@ -112,10 +113,10 @@ public class CommentsAdapter extends BaseAdapter {
 
         /* Image */
         String taskId = String.valueOf(comment.getCommentId());
-        String base64Image = null;
-        if (!comment.getImage().equals("")) {
+        String base64Image = comment.getImage();
+        if (base64Image != null && !base64Image.equals("")) {
             holder.ivImage.setVisibility(View.VISIBLE);
-            base64Image = comment.getImage().substring(comment.getImage().indexOf(","));
+            base64Image = base64Image.substring(base64Image.indexOf(","));
         } else {
             holder.ivImage.setVisibility(View.GONE);
         }
@@ -123,26 +124,32 @@ public class CommentsAdapter extends BaseAdapter {
 
         /* Text */
         String text = comment.getText();
-        holder.tvText.setText(text);
+        if (text != null && !text.equals("")) {
+            holder.tvText.setText(text);
+        } else {
+            holder.tvText.setText("");
+        }
 
         /* Vote */
         Integer vote = comment.getVote();
-        if (vote == DefaultConstants.NULL_INTEGER) {
-            holder.ivUpVoteState.setImageResource(R.drawable.ic_comment_like);
-            holder.ivDownVoteState.setImageResource(R.drawable.ic_comment_dislike);
-        } else if (vote == DefaultConstants.VOTE_UP) {
+        if (vote != null && vote == DefaultConstants.VOTE_UP) {
             holder.ivUpVoteState.setImageResource(R.drawable.ic_comment_like_select);
             holder.ivDownVoteState.setImageResource(R.drawable.ic_comment_dislike);
-        } else if (vote == DefaultConstants.VOTE_DOWN) {
+        } else if (vote != null && vote == DefaultConstants.VOTE_DOWN) {
             holder.ivUpVoteState.setImageResource(R.drawable.ic_comment_like);
             holder.ivDownVoteState.setImageResource(R.drawable.ic_comment_dislike_select);
+        } else {
+            holder.ivUpVoteState.setImageResource(R.drawable.ic_comment_like);
+            holder.ivDownVoteState.setImageResource(R.drawable.ic_comment_dislike);
         }
-        if (comment.getUpvotes() != DefaultConstants.NULL_INTEGER) {
+        Integer upVotes = comment.getUpvotes();
+        if (upVotes != null && upVotes != DefaultConstants.DEFAULT_INTEGER) {
             holder.tvUpVoteCount.setText(String.valueOf(comment.getUpvotes()));
         } else {
             holder.tvUpVoteCount.setText("");
         }
-        if (comment.getDownvotes() != DefaultConstants.NULL_INTEGER) {
+        Integer downVotes = comment.getDownvotes();
+        if (downVotes != null && downVotes != DefaultConstants.DEFAULT_INTEGER) {
             holder.tvDownVoteCount.setText(String.valueOf(comment.getDownvotes()));
         } else {
             holder.tvDownVoteCount.setText("");

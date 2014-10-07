@@ -249,13 +249,15 @@ public class DBAdapter {
      * get posts
      * 
      * @param wallId
+     * @param startFrom
+     * @param maxToLoad
      * @return cursor
      */
-    public Cursor getPosts(String wallId) {
+    public Cursor getPosts(String wallId, int startFrom, int maxToLoad) {
         // TODO Auto-generated method stub
         // build query
         String query = "select *from " + TBL_POST + " where " + COL_POST_WALL_ID + "=" + "'"
-                + wallId + "'";
+                + wallId + "'" + " LIMIT " + maxToLoad + " OFFSET " + startFrom;
         printQuery(query);
 
         // return result
@@ -266,13 +268,15 @@ public class DBAdapter {
      * get comments
      * 
      * @param postId
+     * @param startFrom
+     * @param maxToLoad
      * @return cursor
      */
-    public Cursor getComments(String postId) {
+    public Cursor getComments(String postId, int startFrom, int maxToLoad) {
         // TODO Auto-generated method stub
         // build query
         String query = "select *from " + TBL_COMMENT + " where " + COL_COMMENT_POST_ID + "=" + "'"
-                + postId + "'";
+                + postId + "'" + " LIMIT " + maxToLoad + " OFFSET " + startFrom;
         printQuery(query);
 
         // return result
