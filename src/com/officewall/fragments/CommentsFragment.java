@@ -15,11 +15,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageView.ScaleType;
-import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -44,7 +42,7 @@ import com.officewall.retrofit.service.OfficewallServiceProvider;
 import com.officewall.utils.Utils;
 
 public class CommentsFragment extends Fragment implements OnClickListener, OnItemClickListener,
-        OnRefreshListener, OnScrollListener, MoreOptionsPopupItemClickListener {
+        OnRefreshListener, MoreOptionsPopupItemClickListener {
 
     // views
     private ImageView ivHeader, ivClose;
@@ -62,7 +60,6 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
 
     // start index to load more data
     private int START_FROM = 1;
-    private boolean isLoading = false;
 
     // currently selected post id
     private String POST_ID;
@@ -101,30 +98,25 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
      */
     private void getComments() {
         // TODO Auto-generated method stub
-        /* load data from database to quick display */
-        // get posts for specified post
-        List<Comment> list = UserWallsActivity.dbHandler.getComments(POST_ID, START_FROM,
-                DefaultConstants.MAX_TO_LOAD);
+        List<Comment> list = UserWallsActivity.dbHandler.getComments(POST_ID);
         if (list != null && list.size() != 0) {
-            // add to the list
+            // set list
             if (listComments == null) {
                 listComments = list;
             } else {
                 listComments.addAll(list);
             }
-            // bind list to the adapter
+            // set adapter
             if (adapterComments == null) {
                 adapterComments = new CommentsAdapter(getActivity(), listComments);
-            } else {
-                adapterComments.notifyDataSetChanged(listComments);
             }
+        } else {
+            /* show progressbar */
+            ((UserWallsActivity)getActivity()).showProgressbar();
+            /* call api */
+            OfficewallService service = OfficewallServiceProvider.getService();
+            service.getComments(getCommentsRequestJson(), mCallback);
         }
-
-        /* show progressbar */
-        ((UserWallsActivity)getActivity()).showProgressbar();
-        /* call api */
-        OfficewallService service = OfficewallServiceProvider.getService();
-        service.getComments(getCommentsRequestJson(), mCallback);
     }
 
     /**
@@ -180,38 +172,34 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
                         int commentId = comment.getCommentId();
                         String text = comment.getText() == null ? "" : comment.getText();
                         String image = comment.getImage() == null ? "" : comment.getImage();
-                        int isNew = comment.getNew() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int isNew = comment.getNew() == null ? DefaultConstants.NULL_INTEGER
                                 : comment.getNew();
-                        int upVoteCount = comment.getUpvotes() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int upVoteCount = comment.getUpvotes() == null ? DefaultConstants.NULL_INTEGER
                                 : comment.getUpvotes();
-                        int downVoteCount = comment.getDownvotes() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int downVoteCount = comment.getDownvotes() == null ? DefaultConstants.NULL_INTEGER
                                 : comment.getDownvotes();
-                        int vote = comment.getVote() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int vote = comment.getVote() == null ? DefaultConstants.NULL_INTEGER
                                 : comment.getVote();
-                        int report = comment.getReport() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int report = comment.getReport() == null ? DefaultConstants.NULL_INTEGER
                                 : comment.getReport();
                         UserWallsActivity.dbHandler.insertIntoComment(postId, commentId, text,
                                 image, isNew, upVoteCount, downVoteCount, vote, report);
                     }
-
-                    // add to the list
-                    if (listComments == null) {
-                        listComments = list;
-                    } else {
-                        for (int i = START_FROM - 1; i < list.size(); i++) {
-                            if (i >= listComments.size()) {
-                                listComments.add(list.get(i));
-                            } else {
-                                listComments.set(i, list.get(i));
-                            }
+                    List<Comment> list2 = UserWallsActivity.dbHandler.getComments(POST_ID);
+                    if (list2 != null && list2.size() != 0) {
+                        // set list
+                        if (listComments == null) {
+                            listComments = list2;
+                        } else {
+                            listComments.addAll(list2);
                         }
-                    }
-                    // bind list to the adapter
-                    if (adapterComments == null) {
-                        adapterComments = new CommentsAdapter(getActivity(), listComments);
-                        lvComments.setAdapter(adapterComments);
-                    } else {
-                        adapterComments.notifyDataSetChanged(listComments);
+                        // set adapter
+                        if (adapterComments == null) {
+                            adapterComments = new CommentsAdapter(getActivity(), listComments);
+                            lvComments.setAdapter(adapterComments);
+                        } else {
+                            adapterComments.notifyDataSetChanged(listComments);
+                        }
                     }
                 }
             } else {
@@ -219,8 +207,6 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
                 String message = getCommentsRs.getUserMessage();
                 ((UserWallsActivity)getActivity()).showStatus(HttpConstants.RESULT_ERROR, message);
             }
-            // reset loading flag on API call completed
-            isLoading = false;
         }
 
         @Override
@@ -250,7 +236,6 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
         initializeControls(mainView);
         initializeActions();
         setHeaderBg();
-        setData();
 
         return mainView;
     }
@@ -282,10 +267,17 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
         // listview
         lvComments.setOnItemClickListener(this);
         lvComments.setOnRefreshListener(this);
-        lvComments.setOnScrollListener(this);
 
         // textview
         tvSaySomething.setOnClickListener(this);
+
+        // set adaper
+        if (adapterComments != null) {
+            lvComments.setAdapter(adapterComments);
+        }
+
+        // reset popup dialog instance
+        moreOptionsPopupDialog = null;
     }
 
     /**
@@ -293,7 +285,7 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
      */
     private void setHeaderBg() {
         // TODO Auto-generated method stub
-        if (postBgColor != null && !postBgColor.equals("")) {
+        if (!postBgColor.equals("")) {
             int index = Arrays.asList(getResources().getStringArray(R.array.arrPostColorCodes))
                     .indexOf(postBgColor);
             if (index != -1) {
@@ -331,20 +323,6 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
                 e.printStackTrace();
             }
         }
-    }
-
-    /**
-     * set data
-     */
-    private void setData() {
-        // TODO Auto-generated method stub
-        // set adaper
-        if (adapterComments != null) {
-            lvComments.setAdapter(adapterComments);
-        }
-
-        // reset popup dialog instance
-        moreOptionsPopupDialog = null;
     }
 
     /**
@@ -391,38 +369,12 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
         lvComments.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (!isLoading) {
-                    // update start counter
-                    START_FROM += DefaultConstants.MAX_TO_LOAD;
-                    // get comments
-                    getComments();
-                }
-            }
-        }, 0);
-    }
-
-    /**
-     * handles refresh on scrolling
-     */
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // TODO Auto-generated method stub
-        if (!isLoading) {
-            if (lvComments.getLastVisiblePosition() >= lvComments.getCount() - 1) {
-                // set loading flag to true
-                isLoading = true;
                 // update start counter
                 START_FROM += DefaultConstants.MAX_TO_LOAD;
                 // get comments
                 getComments();
             }
-        }
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
-            int totalItemCount) {
-        // TODO Auto-generated method stub
+        }, 0);
     }
 
     /**
@@ -458,18 +410,18 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
     private void upVoteComment(final int position) {
         // TODO Auto-generated method stub
         final Comment comment = listComments.get(position);
-        final int vote = (comment.getVote() == null) ? DefaultConstants.DEFAULT_INTEGER : comment
-                .getVote();
-        final int upVote = (comment.getUpvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : comment.getUpvotes();
-        final int downVote = (comment.getDownvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : comment.getDownvotes();
+        final int vote = comment.getVote();
+        // final int vote = (comment.getVote() == null) ?
+        // DefaultConstants.NULL_INTEGER : comment
+        // .getVote();
         if (vote != DefaultConstants.VOTE_UP) {
             // update data
             if (vote == DefaultConstants.VOTE_DOWN) {
-                comment.setDownvotes(downVote - 1);
+                comment.setDownvotes((comment.getDownvotes() == 1) ? DefaultConstants.NULL_INTEGER
+                        : comment.getDownvotes() - 1);
             }
-            comment.setUpvotes(upVote + 1);
+            comment.setUpvotes((comment.getUpvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                    : comment.getUpvotes() + 1);
             comment.setVote(DefaultConstants.VOTE_UP);
             listComments.set(position, comment);
             adapterComments.notifyDataSetChanged(listComments);
@@ -488,9 +440,11 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
                     // TODO Auto-generated method stub
                     // reset data
                     if (vote == DefaultConstants.VOTE_DOWN) {
-                        comment.setDownvotes(downVote + 1);
+                        comment.setDownvotes((comment.getDownvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                                : comment.getDownvotes() + 1);
                     }
-                    comment.setUpvotes(upVote - 1);
+                    comment.setUpvotes((comment.getUpvotes() == 1) ? DefaultConstants.NULL_INTEGER
+                            : comment.getUpvotes() - 1);
                     comment.setVote(vote);
                     listComments.set(position, comment);
                     adapterComments.notifyDataSetChanged(listComments);
@@ -507,18 +461,18 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
     private void downVoteComment(final int position) {
         // TODO Auto-generated method stub
         final Comment comment = listComments.get(position);
-        final int vote = (comment.getVote() == null) ? DefaultConstants.DEFAULT_INTEGER : comment
-                .getVote();
-        final int upVote = (comment.getUpvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : comment.getUpvotes();
-        final int downVote = (comment.getDownvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : comment.getDownvotes();
+        final int vote = comment.getVote();
+        // final int vote = (comment.getVote() == null) ?
+        // DefaultConstants.NULL_INTEGER : comment
+        // .getVote();
         if (vote != DefaultConstants.VOTE_DOWN) {
             // update data
             if (vote == DefaultConstants.VOTE_UP) {
-                comment.setUpvotes(upVote - 1);
+                comment.setUpvotes((comment.getUpvotes() == 1) ? DefaultConstants.NULL_INTEGER
+                        : comment.getUpvotes() - 1);
             }
-            comment.setDownvotes(downVote + 1);
+            comment.setDownvotes((comment.getDownvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                    : comment.getDownvotes() + 1);
             comment.setVote(DefaultConstants.VOTE_DOWN);
             listComments.set(position, comment);
             adapterComments.notifyDataSetChanged(listComments);
@@ -537,9 +491,11 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
                     // TODO Auto-generated method stub
                     // reset data
                     if (vote == DefaultConstants.VOTE_UP) {
-                        comment.setUpvotes(upVote + 1);
+                        comment.setUpvotes((comment.getUpvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                                : comment.getUpvotes() + 1);
                     }
-                    comment.setDownvotes(downVote - 1);
+                    comment.setDownvotes((comment.getDownvotes() == 1) ? DefaultConstants.NULL_INTEGER
+                            : comment.getDownvotes() - 1);
                     comment.setVote(vote);
                     listComments.set(position, comment);
                     adapterComments.notifyDataSetChanged(listComments);
@@ -591,9 +547,8 @@ public class CommentsFragment extends Fragment implements OnClickListener, OnIte
 
         // set data
         Comment comment = listComments.get(position);
-        Integer report = comment.getReport() == null ? DefaultConstants.DEFAULT_INTEGER : comment
-                .getReport();
-        moreOptionsPopupDialog.setData(position, null, report);
+        moreOptionsPopupDialog
+                .setData(position, DefaultConstants.NULL_INTEGER, comment.getReport());
 
         // show dialog
         moreOptionsPopupDialog.showDialogAtLocation(Utils.locateView(view));

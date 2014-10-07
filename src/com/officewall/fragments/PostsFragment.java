@@ -19,10 +19,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -52,10 +50,9 @@ import com.officewall.retrofit.service.OfficewallService;
 import com.officewall.retrofit.service.OfficewallServiceProvider;
 import com.officewall.utils.Utils;
 
-public class PostsFragment extends Fragment implements OnItemClickListener, OnScrollListener,
-        OnRefreshListener, OnClickListener, MoreOptionsPopupItemClickListener {
+public class PostsFragment extends Fragment implements OnItemClickListener, OnRefreshListener,
+        OnClickListener, MoreOptionsPopupItemClickListener {
 
-    /* Posts */
     // views
     private PullToRefreshListView lvPosts;
 
@@ -70,10 +67,8 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
 
     // start index to load more data
     private int START_FROM = 1;
-    private boolean isLoading = false;
 
-    /* Invite friends */
-    // views
+    // invite friends view
     private LinearLayout llInviteFriends;
     private TextView tvInactiveWallNote, tvSendInvitationNote, tvSelectAll, tvSelectNone,
             tvLoadingContacts;
@@ -104,31 +99,27 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
      */
     private void getPosts() {
         // TODO Auto-generated method stub
-        /* load data from database to quick display */
+        // check if data available in database
         String wallId = UserWallsActivity.SELECTED_WALL_ID;
-        // get posts for specified wall
-        List<Post> list = UserWallsActivity.dbHandler.getPosts(wallId, START_FROM,
-                DefaultConstants.MAX_TO_LOAD);
+        List<Post> list = UserWallsActivity.dbHandler.getPosts(wallId);
         if (list != null && list.size() != 0) {
-            // add to the list
+            // set list
             if (listPosts == null) {
                 listPosts = list;
             } else {
                 listPosts.addAll(list);
             }
-            // bind list to the adapter
+            // set adapter
             if (adapterPosts == null) {
                 adapterPosts = new PostsAdapter(getActivity(), listPosts);
-            } else {
-                adapterPosts.notifyDataSetChanged(listPosts);
             }
+        } else {
+            /* show progressbar */
+            ((UserWallsActivity)getActivity()).showProgressbar();
+            /* call api */
+            OfficewallService service = OfficewallServiceProvider.getService();
+            service.getPosts(getPostsRequestJson(), mPostsCallback);
         }
-
-        /* show progressbar */
-        ((UserWallsActivity)getActivity()).showProgressbar();
-        /* call api */
-        OfficewallService service = OfficewallServiceProvider.getService();
-        service.getPosts(getPostsRequestJson(), mPostsCallback);
     }
 
     /**
@@ -176,8 +167,7 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                 /* take action on success */
                 List<Post> list = getPostsRs.getPosts();
                 if (list != null && list.size() != 0) {
-
-                    /* insert post into database */
+                    // insert post into database
                     for (int i = 0; i < list.size(); i++) {
                         // get data
                         Post post = list.get(i);
@@ -186,47 +176,44 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                         String text = post.getText() == null ? "" : post.getText();
                         String image = post.getImage() == null ? "" : post.getImage();
                         String bgColor = post.getBgColor() == null ? "" : post.getBgColor();
-                        int isNew = post.getNew() == null ? DefaultConstants.DEFAULT_INTEGER : post
+                        int isNew = post.getNew() == null ? DefaultConstants.NULL_INTEGER : post
                                 .getNew();
-                        int upVoteCount = post.getUpvotes() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int upVoteCount = post.getUpvotes() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getUpvotes();
-                        int downVoteCount = post.getDownvotes() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int downVoteCount = post.getDownvotes() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getDownvotes();
-                        int totalComment = post.getTotalComments() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int totalComment = post.getTotalComments() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getTotalComments();
-                        int newComment = post.getNewComments() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int newComment = post.getNewComments() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getNewComments();
-                        int vote = post.getVote() == null ? DefaultConstants.DEFAULT_INTEGER : post
+                        int vote = post.getVote() == null ? DefaultConstants.NULL_INTEGER : post
                                 .getVote();
-                        int report = post.getReport() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int report = post.getReport() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getReport();
-                        int status = post.getStatus() == null ? DefaultConstants.DEFAULT_INTEGER
+                        int status = post.getStatus() == null ? DefaultConstants.NULL_INTEGER
                                 : post.getStatus();
                         UserWallsActivity.dbHandler.insertIntoPost(wallId, postId, text, image,
                                 bgColor, isNew, upVoteCount, downVoteCount, totalComment,
                                 newComment, vote, report, status);
                     }
-
-                    // add to the list
-                    if (listPosts == null) {
-                        listPosts = list;
-                    } else {
-                        for (int i = START_FROM - 1; i < list.size(); i++) {
-                            if (i >= listPosts.size()) {
-                                listPosts.add(list.get(i));
-                            } else {
-                                listPosts.set(i, list.get(i));
-                            }
+                    // load from database
+                    String wallId = UserWallsActivity.SELECTED_WALL_ID;
+                    List<Post> list2 = UserWallsActivity.dbHandler.getPosts(wallId);
+                    if (list2 != null && list2.size() != 0) {
+                        // set list
+                        if (listPosts == null) {
+                            listPosts = list2;
+                        } else {
+                            listPosts.addAll(list2);
+                        }
+                        // set adapter
+                        if (adapterPosts == null) {
+                            adapterPosts = new PostsAdapter(getActivity(), listPosts);
+                            lvPosts.setAdapter(adapterPosts);
+                        } else {
+                            adapterPosts.notifyDataSetChanged(listPosts);
                         }
                     }
-                    // bind list to the adapter
-                    if (adapterPosts == null) {
-                        adapterPosts = new PostsAdapter(getActivity(), listPosts);
-                        lvPosts.setAdapter(adapterPosts);
-                    } else {
-                        adapterPosts.notifyDataSetChanged(listPosts);
-                    }
-
                     // show posts view
                     showPostsView();
                 } else {
@@ -240,8 +227,6 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                 String message = getPostsRs.getUserMessage();
                 ((UserWallsActivity)getActivity()).showStatus(HttpConstants.RESULT_ERROR, message);
             }
-            // reset loading flag on API call completed
-            isLoading = false;
         }
 
         @Override
@@ -270,7 +255,6 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
         // setup layout controls
         initializeControls(mainView);
         initializeActions();
-        setData();
 
         return mainView;
     }
@@ -310,31 +294,24 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
      */
     private void initializeActions() {
         // TODO Auto-generated method stub
-        /* Posts */
+        /* posts view */
         // listview
         lvPosts.setOnItemClickListener(this);
         lvPosts.setOnRefreshListener(this);
-        lvPosts.setOnScrollListener(this);
 
-        /* Invite friends */
+        /* invite friends view */
         // textview
         tvSelectAll.setOnClickListener(this);
         tvSelectNone.setOnClickListener(this);
 
         // button
         btnInvite.setOnClickListener(this);
-    }
 
-    /**
-     * set data
-     */
-    private void setData() {
-        // TODO Auto-generated method stub
         // check if posts found
         if (adapterPosts != null) {
             // set adaper
             lvPosts.setAdapter(adapterPosts);
-            // show posts view
+            // hide invite friends view
             showPostsView();
         } else if (adapterContacts != null) {
             // set adaper
@@ -345,14 +322,6 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
 
         // reset popup dialog instance
         moreOptionsPopupDialog = null;
-    }
-
-    /**
-     * show posts view
-     */
-    private void showPostsView() {
-        // TODO Auto-generated method stub
-        lvPosts.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -367,6 +336,14 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                 .replace("_", UserWallsActivity.SELECTED_WALL_NAME)));
         // show view
         llInviteFriends.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * show posts view
+     */
+    private void showPostsView() {
+        // TODO Auto-generated method stub
+        lvPosts.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -592,40 +569,12 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
         lvPosts.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (!isLoading) {
-                    // set loading flag to true
-                    isLoading = true;
-                    // update start counter
-                    START_FROM += DefaultConstants.MAX_TO_LOAD;
-                    // get posts
-                    getPosts();
-                }
-            }
-        }, 0);
-    }
-
-    /**
-     * handles refresh on scrolling
-     */
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // TODO Auto-generated method stub
-        if (!isLoading) {
-            if (lvPosts.getLastVisiblePosition() >= lvPosts.getCount() - 1) {
-                // set loading flag to true
-                isLoading = true;
                 // update start counter
                 START_FROM += DefaultConstants.MAX_TO_LOAD;
                 // get posts
                 getPosts();
             }
-        }
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
-            int totalItemCount) {
-        // TODO Auto-generated method stub
+        }, 0);
     }
 
     /**
@@ -700,11 +649,7 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
 
         // set data
         Post post = listPosts.get(position);
-        Integer status = post.getStatus() == null ? DefaultConstants.DEFAULT_INTEGER : post
-                .getStatus();
-        Integer report = post.getReport() == null ? DefaultConstants.DEFAULT_INTEGER : post
-                .getReport();
-        moreOptionsPopupDialog.setData(position, status, report);
+        moreOptionsPopupDialog.setData(position, post.getStatus(), post.getReport());
 
         // show dialog
         moreOptionsPopupDialog.showDialogAtLocation(Utils.locateView(view));
@@ -732,7 +677,7 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                         if (statusCode == DefaultConstants.SET_STATUS_SUBSCRIBE) {
                             post.setStatus(1);
                         } else {
-                            post.setStatus(DefaultConstants.DEFAULT_INTEGER);
+                            post.setStatus(null);
                         }
                         listPosts.set(position, post);
                     }
@@ -844,18 +789,17 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
     private void upVotePost(final int position) {
         // TODO Auto-generated method stub
         final Post post = listPosts.get(position);
-        final int vote = (post.getVote() == null) ? DefaultConstants.DEFAULT_INTEGER : post
-                .getVote();
-        final int upVote = (post.getUpvotes() == null) ? DefaultConstants.DEFAULT_INTEGER : post
-                .getUpvotes();
-        final int downVote = (post.getDownvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : post.getDownvotes();
+        final int vote = post.getVote();
+        // final int vote = (post.getVote() == null) ?
+        // DefaultConstants.NULL_INTEGER : post.getVote();
         if (vote != DefaultConstants.VOTE_UP) {
             // update data
             if (vote == DefaultConstants.VOTE_DOWN) {
-                post.setDownvotes(downVote - 1);
+                post.setDownvotes((post.getDownvotes() == 1) ? DefaultConstants.NULL_INTEGER : post
+                        .getDownvotes() - 1);
             }
-            post.setUpvotes(upVote + 1);
+            post.setUpvotes((post.getUpvotes() == DefaultConstants.NULL_INTEGER) ? 1 : post
+                    .getUpvotes() + 1);
             post.setVote(DefaultConstants.VOTE_UP);
             listPosts.set(position, post);
             adapterPosts.notifyDataSetChanged(listPosts);
@@ -874,9 +818,11 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                     // TODO Auto-generated method stub
                     // reset data
                     if (vote == DefaultConstants.VOTE_DOWN) {
-                        post.setDownvotes(downVote + 1);
+                        post.setDownvotes((post.getDownvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                                : post.getDownvotes() + 1);
                     }
-                    post.setUpvotes(upVote - 1);
+                    post.setUpvotes((post.getUpvotes() == 1) ? DefaultConstants.NULL_INTEGER : post
+                            .getUpvotes() - 1);
                     post.setVote(vote);
                     listPosts.set(position, post);
                     adapterPosts.notifyDataSetChanged(listPosts);
@@ -893,18 +839,17 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
     private void downVotePost(final int position) {
         // TODO Auto-generated method stub
         final Post post = listPosts.get(position);
-        final int vote = (post.getVote() == null) ? DefaultConstants.DEFAULT_INTEGER : post
-                .getVote();
-        final int upVote = (post.getUpvotes() == null) ? DefaultConstants.DEFAULT_INTEGER : post
-                .getUpvotes();
-        final int downVote = (post.getDownvotes() == null) ? DefaultConstants.DEFAULT_INTEGER
-                : post.getDownvotes();
+        final int vote = post.getVote();
+        // final int vote = (post.getVote() == null) ?
+        // DefaultConstants.NULL_INTEGER : post.getVote();
         if (vote != DefaultConstants.VOTE_DOWN) {
             // update data
             if (vote == DefaultConstants.VOTE_UP) {
-                post.setUpvotes(upVote - 1);
+                post.setUpvotes((post.getUpvotes() == 1) ? DefaultConstants.NULL_INTEGER : post
+                        .getUpvotes() - 1);
             }
-            post.setDownvotes(downVote + 1);
+            post.setDownvotes((post.getDownvotes() == DefaultConstants.NULL_INTEGER) ? 1 : post
+                    .getDownvotes() + 1);
             post.setVote(DefaultConstants.VOTE_DOWN);
             listPosts.set(position, post);
             adapterPosts.notifyDataSetChanged(listPosts);
@@ -923,9 +868,11 @@ public class PostsFragment extends Fragment implements OnItemClickListener, OnSc
                     // TODO Auto-generated method stub
                     // reset data
                     if (vote == DefaultConstants.VOTE_UP) {
-                        post.setUpvotes(upVote + 1);
+                        post.setUpvotes((post.getUpvotes() == DefaultConstants.NULL_INTEGER) ? 1
+                                : post.getUpvotes() + 1);
                     }
-                    post.setDownvotes(downVote - 1);
+                    post.setDownvotes((post.getDownvotes() == 1) ? DefaultConstants.NULL_INTEGER
+                            : post.getDownvotes() - 1);
                     post.setVote(vote);
                     listPosts.set(position, post);
                     adapterPosts.notifyDataSetChanged(listPosts);

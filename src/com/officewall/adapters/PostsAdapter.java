@@ -101,9 +101,8 @@ public class PostsAdapter extends BaseAdapter {
         final Post post = (Post)getItem(position);
 
         /* Background color */
-        String bgColor = post.getBgColor();
-        if (bgColor != null && !bgColor.equals("")) {
-            int index = listColorCodes.indexOf(bgColor);
+        if (!post.getBgColor().equals("")) {
+            int index = listColorCodes.indexOf(post.getBgColor());
             if (index != -1) {
                 holder.ivBgColor.setImageResource(typedArrColorDrawables.getResourceId(index, 0));
             } else {
@@ -115,15 +114,15 @@ public class PostsAdapter extends BaseAdapter {
 
         /* Post Image */
         String taskId = String.valueOf(post.getPostId());
-        String base64Image = post.getImage();
-        if (base64Image != null && !base64Image.equals("")) {
-            base64Image = base64Image.substring(base64Image.indexOf(","));
+        String base64Image = null;
+        if (!post.getImage().equals("")) {
+            base64Image = post.getImage().substring(post.getImage().indexOf(","));
         }
         AsyncImageLoader.loadBitmap(mContext, taskId, base64Image, holder.ivImage);
 
         /* Text */
         String text = post.getText();
-        if (text != null && !text.equals("")) {
+        if (!text.equals("")) {
             holder.tvText.setText(text);
             holder.tvText.setVisibility(View.VISIBLE);
         } else {
@@ -132,22 +131,19 @@ public class PostsAdapter extends BaseAdapter {
         }
 
         /* New post */
-        Integer isNew = post.getNew();
-        if (isNew != null && isNew != DefaultConstants.DEFAULT_INTEGER) {
+        if (post.getNew() != DefaultConstants.NULL_INTEGER) {
             holder.ivNewPost.setVisibility(View.VISIBLE);
         } else {
             holder.ivNewPost.setVisibility(View.INVISIBLE);
         }
 
         /* Comment */
-        Integer newComments = post.getNewComments();
-        if (newComments != null && newComments != DefaultConstants.DEFAULT_INTEGER) {
+        if (post.getNewComments() != DefaultConstants.NULL_INTEGER) {
             holder.ivCommentState.setImageResource(R.drawable.ic_wall_tile_chat_select);
         } else {
             holder.ivCommentState.setImageResource(R.drawable.ic_wall_tile_chat);
         }
-        Integer totalComments = post.getTotalComments();
-        if (totalComments != null && totalComments != DefaultConstants.DEFAULT_INTEGER) {
+        if (post.getTotalComments() != DefaultConstants.NULL_INTEGER) {
             holder.tvCommentCount.setText(String.valueOf(post.getTotalComments()));
         } else {
             holder.tvCommentCount.setText("");
@@ -155,24 +151,22 @@ public class PostsAdapter extends BaseAdapter {
 
         /* Vote */
         Integer vote = post.getVote();
-        if (vote != null && vote == DefaultConstants.VOTE_UP) {
+        if (vote == DefaultConstants.NULL_INTEGER) {
+            holder.ivUpVoteState.setImageResource(R.drawable.ic_wall_tile_like);
+            holder.ivDownVoteState.setImageResource(R.drawable.ic_wall_tile_dislike);
+        } else if (vote == DefaultConstants.VOTE_UP) {
             holder.ivUpVoteState.setImageResource(R.drawable.ic_wall_tile_like_select);
             holder.ivDownVoteState.setImageResource(R.drawable.ic_wall_tile_dislike);
-        } else if (vote != null && vote == DefaultConstants.VOTE_DOWN) {
+        } else if (vote == DefaultConstants.VOTE_DOWN) {
             holder.ivUpVoteState.setImageResource(R.drawable.ic_wall_tile_like);
             holder.ivDownVoteState.setImageResource(R.drawable.ic_wall_tile_dislike_select);
-        } else {
-            holder.ivUpVoteState.setImageResource(R.drawable.ic_wall_tile_like);
-            holder.ivDownVoteState.setImageResource(R.drawable.ic_wall_tile_dislike);
         }
-        Integer upVotes = post.getUpvotes();
-        if (upVotes != null && upVotes != DefaultConstants.DEFAULT_INTEGER) {
+        if (post.getUpvotes() != DefaultConstants.NULL_INTEGER) {
             holder.tvUpVoteCount.setText(String.valueOf(post.getUpvotes()));
         } else {
             holder.tvUpVoteCount.setText("");
         }
-        Integer downVotes = post.getDownvotes();
-        if (downVotes != null && downVotes != DefaultConstants.DEFAULT_INTEGER) {
+        if (post.getDownvotes() != DefaultConstants.NULL_INTEGER) {
             holder.tvDownVoteCount.setText(String.valueOf(post.getDownvotes()));
         } else {
             holder.tvDownVoteCount.setText("");

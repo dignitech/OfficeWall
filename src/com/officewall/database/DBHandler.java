@@ -196,11 +196,9 @@ public class DBHandler {
      * get posts
      * 
      * @param wallId
-     * @param startFrom
-     * @param maxToLoad
      * @return list
      */
-    public List<Post> getPosts(String wallId, int startFrom, int maxToLoad) {
+    public List<Post> getPosts(String wallId) {
         // TODO Auto-generated method stub
         // wall list
         List<Post> listPost = null;
@@ -211,7 +209,7 @@ public class DBHandler {
             // open database
             dbAdapter.openToFetch();
             // query database
-            Cursor cursor = dbAdapter.getPosts(wallId, startFrom, maxToLoad);
+            Cursor cursor = dbAdapter.getPosts(wallId);
             if (cursor != null) {
                 int count = cursor.getCount();
                 if (count > 0) {
@@ -252,11 +250,9 @@ public class DBHandler {
      * get comments
      * 
      * @param postId
-     * @param startFrom
-     * @param maxToLoad
      * @return list
      */
-    public List<Comment> getComments(String postId, int startFrom, int maxToLoad) {
+    public List<Comment> getComments(String postId) {
         // TODO Auto-generated method stub
         // wall list
         List<Comment> listComment = null;
@@ -267,7 +263,7 @@ public class DBHandler {
             // open database
             dbAdapter.openToFetch();
             // query database
-            Cursor cursor = dbAdapter.getComments(postId, startFrom, maxToLoad);
+            Cursor cursor = dbAdapter.getComments(postId);
             if (cursor != null) {
                 int count = cursor.getCount();
                 if (count > 0) {

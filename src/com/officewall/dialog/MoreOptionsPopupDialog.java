@@ -97,17 +97,15 @@ public class MoreOptionsPopupDialog implements OnClickListener {
 
         /* Default options */
         // Subscribe
-        if (subscribe != null) {
-            if (subscribe != DefaultConstants.DEFAULT_INTEGER) {
-                tvSubscribe.setText(mContext.getResources().getString(R.string.strSubscribed));
-                ivSubscribeSelect.setVisibility(View.VISIBLE);
-            } else {
-                tvSubscribe.setText(mContext.getResources().getString(R.string.strSubscribe));
-                ivSubscribeSelect.setVisibility(View.GONE);
-            }
+        if (subscribe != DefaultConstants.NULL_INTEGER) {
+            tvSubscribe.setText(mContext.getResources().getString(R.string.strSubscribed));
+            ivSubscribeSelect.setVisibility(View.VISIBLE);
+        } else {
+            tvSubscribe.setText(mContext.getResources().getString(R.string.strSubscribe));
+            ivSubscribeSelect.setVisibility(View.GONE);
         }
         // Report abuse
-        if (report != DefaultConstants.DEFAULT_INTEGER) {
+        if (report != DefaultConstants.NULL_INTEGER) {
             tvReportAbuse.setText(mContext.getResources().getString(R.string.strReportedAbuse));
             ivReportAbuseSelect.setVisibility(View.VISIBLE);
         } else {
@@ -123,14 +121,6 @@ public class MoreOptionsPopupDialog implements OnClickListener {
         viewOtherReason.setVisibility(View.GONE);
         // show view
         viewDefaultOptions.setVisibility(View.VISIBLE);
-
-        /*
-         * subscribe == null i.e. popup for Comments hence go directly to the
-         * Report abuse view
-         */
-        if (subscribe == null) {
-            llReportAbuse.performClick();
-        }
     }
 
     /**
@@ -290,7 +280,7 @@ public class MoreOptionsPopupDialog implements OnClickListener {
      */
     private void onSubscribe() {
         // TODO Auto-generated method stub
-        if (mSubscribe == DefaultConstants.DEFAULT_INTEGER) {
+        if (mSubscribe == DefaultConstants.NULL_INTEGER) {
             tvSubscribe.setText(mContext.getResources().getString(R.string.strSubscribed));
             ivSubscribeSelect.setVisibility(View.VISIBLE);
             if (mListener != null) {
@@ -309,7 +299,7 @@ public class MoreOptionsPopupDialog implements OnClickListener {
      */
     private void showReportAbuseView() {
         // TODO Auto-generated method stub
-        if (mReport == DefaultConstants.DEFAULT_INTEGER) {
+        if (mReport == DefaultConstants.NULL_INTEGER) {
             // hide view
             viewDefaultOptions.setVisibility(View.GONE);
             // show view
