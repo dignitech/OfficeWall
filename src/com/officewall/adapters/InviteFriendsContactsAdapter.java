@@ -74,7 +74,7 @@ public class InviteFriendsContactsAdapter extends BaseAdapter {
         }
 
         /**/
-        /* set Comment data */
+        /* set Contact data */
         Contact contact = (Contact)getItem(position);
 
         /* Text */
